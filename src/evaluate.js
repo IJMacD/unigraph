@@ -4,7 +4,9 @@ const OP_MAP = {
     "+": (a,b) => a + b,
     "-": (a,b) => a - b,
     "×": (a,b) => a * b,
+    "*": (a,b) => a * b,
     "÷": (a,b) => a / b,
+    "/": (a,b) => a / b,
     "^": (a,b) => Math.pow(a, b),
 };
 

@@ -1,4 +1,4 @@
-import { TOKEN_TYPES } from "./tokenizer";
+import { TOKEN_TYPES } from "./tokenizer.js";
 
 export const NODE_TYPES = {
     UNKNOWN: 0,
@@ -20,56 +20,120 @@ export const NODE_TYPES = {
  * @returns {Node}
  */
 export function parse (tokens) {
-    /** @type {Node} */
-    let root;
-    /** @type {Node} */
-    let current;
+    /** @type {Node[]} */
+    const nodes = [];
+    let i = 0;
 
     for (const token of tokens) {
-        /** @type {Node} */
-        let node;
+        const prev = nodes.length > 0 ? nodes[nodes.length - 1] : null;
+        
         switch (token.type) {
             case TOKEN_TYPES.NAME: {
-                node = { type: NODE_TYPES.SYMBOL, name: token.name };
+                if (prev && 
+                    (prev.type === NODE_TYPES.SYMBOL || prev.type === NODE_TYPES.CONSTANT))
+                {
+                    nodes.push({ type: NODE_TYPES.OPERATOR, name: "*", children: [] });
+                }
+                nodes.push({ type: NODE_TYPES.SYMBOL, name: token.name });
             }
             break;
             case TOKEN_TYPES.NUMBER: {
-                node = { type: NODE_TYPES.CONSTANT, value: token.value };
+                nodes.push({ type: NODE_TYPES.CONSTANT, value: token.value });
             }
             break;
             case TOKEN_TYPES.OPERATOR: {
-                node = { type: NODE_TYPES.OPERATOR, name: token.name, children: [ root ] };
-                root = node;
+                nodes.push({ type: NODE_TYPES.OPERATOR, name: token.name, children: [ ] });
             }
             break;
             case TOKEN_TYPES.SUPERSCRIPT: {
-                const exponent = { type: NODE_TYPES.CONSTANT, value: token.value };
-                node = { type: NODE_TYPES.OPERATOR, name: "^", children: [ current, exponent ] };
-                root = node;
+                nodes.push({ type: NODE_TYPES.OPERATOR, name: "^", children: [ ] });
+                nodes.push({ type: NODE_TYPES.CONSTANT, value: token.value });
             }
             break;
             case TOKEN_TYPES.SUBSCRIPT: {
-                if (current.type === NODE_TYPES.SYMBOL) {
-                    current.name += token.value.toString();
+                if (!prev) {
+                    throw RangeError("Subscript cannot appear as first token");
                 }
+
+                if (prev.type !== NODE_TYPES.SYMBOL) {
+                    throw TypeError("Subscript must appear after a symbol");
+                }
+                
+                prev.name += token.value.toString();
             }
             break;
+            default:
+                throw TypeError("Unecpected node type");
         }
-
-        if (!root) {
-            root = node;
-        }
-
-        if (current) {
-            if (current.type === NODE_TYPES.OPERATOR && current.children.length === 1) {
-                current.children.push(node);
-            } else if (current.type === NODE_TYPES.SYMBOL && node.type === NODE_TYPES.SYMBOL) {
-                node = { type: NODE_TYPES.OPERATOR, name: "×", children: [ current, node ] }
-            }
-        }
-
-        current = node;
     }
 
-    return root;
+    // console.log(nodes);
+
+    canonicalOperators(nodes);
+
+    bubbleOperators(nodes);
+
+    // console.log(nodes);
+
+    let index = 0;
+    
+    function descend () {
+        const n = nodes[index++];
+
+        if (n.type === NODE_TYPES.OPERATOR) {
+            n.children.push(descend(), descend());
+        }
+
+        return n;
+    }
+
+    return descend();
+}
+
+
+/**
+ * Operator precedence
+ * Higher number is tighter binding
+ */
+const PRECEDENCE = {
+    "+": 30,
+    "-": 30,
+    "*": 40,
+    "/": 40,
+    "×": 40,
+    "÷": 40,
+    "^": 50,
+};
+
+/**
+ *
+ * @param {Node[]} nodes
+ */
+function bubbleOperators (nodes) {
+    for (let i = nodes.length - 1; i > 0; i--) {
+        const n = nodes[i];
+
+        if (n.type !== NODE_TYPES.OPERATOR) {
+            continue;
+        }
+
+        for (let j = i; j > 0; j--) {
+            const a = nodes[j];
+            const b = nodes[j-1];
+
+            if (b.type === NODE_TYPES.OPERATOR && PRECEDENCE[b.name] < PRECEDENCE[a.name]) {
+                break;
+            }
+
+            nodes[j-1] = a;
+            nodes[j] = b;
+        }
+    }
+}
+
+function canonicalOperators (nodes) {
+    for (const node of nodes) {
+        if (node.name === "*") { node.name = "×" }
+        else if (node.name === "/") { node.name = "÷" }
+    }
 }
