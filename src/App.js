@@ -6,10 +6,12 @@ import { parse } from './parser';
 import { findParamaters } from './tools';
 import { evaluate } from './evaluate';
 import DebugAST from './DebugAST';
+import { rebalance, constantEvaluation } from './optimise';
 
 function App() {
-  const [ expression, setExpression ] = React.useState("ax³ + bx + c");
-  // const [ value, setValue ] = React.useState("x + x₀ + x₁");
+  const [ expression, setExpression ] = React.useState("5ax³ + bx + c");
+  // const [ expression, setExpression ] = React.useState("x + x₀ + x₁");
+  // const [ expression, setExpression ] = React.useState("1 + 2 + 3 + 4 + 5 + 6");
   const [ variable, setVariable ] = React.useState("x");
   const [ paramValues, setParamValues ] = React.useState({});
   const [ xMin, setXMin ] = React.useState(-5);
@@ -28,10 +30,16 @@ function App() {
     // console.log(tokens);
     expr = parse(tokens);
     // console.log(expr);
+    // console.log(depth(expr));
+    expr = rebalance(expr);
+    // console.log(depth(expr));
+    expr = constantEvaluation(expr);
+    // expr = rebalance(expr);
+    // expr = constantEvaluation(expr);
 
     params = findParamaters(expr, variable);
   } catch (e) {
-    console.error(e);
+    // console.error(e);
     valid = false;
   }
 
@@ -46,7 +54,7 @@ function App() {
     try {
       return evaluate(expr, symbols);
     } catch (e) {
-      console.error(e);
+      // console.error(e);
     }
   }
 

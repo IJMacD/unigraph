@@ -87,7 +87,13 @@ export function parse (tokens) {
         return n;
     }
 
-    return descend();
+    const node = descend();
+
+    if (index !== nodes.length) {
+        throw Error(`Too many nodes. Expected ${index-1}, Got ${nodes.length}`);
+    }
+
+    return node;
 }
 
 
@@ -121,7 +127,7 @@ function bubbleOperators (nodes) {
             const a = nodes[j];
             const b = nodes[j-1];
 
-            if (b.type === NODE_TYPES.OPERATOR && PRECEDENCE[b.name] < PRECEDENCE[a.name]) {
+            if (b.type === NODE_TYPES.OPERATOR && PRECEDENCE[b.name] <= PRECEDENCE[a.name]) {
                 break;
             }
 
@@ -131,6 +137,9 @@ function bubbleOperators (nodes) {
     }
 }
 
+/**
+ * @param {Node[]} nodes
+ */
 function canonicalOperators (nodes) {
     for (const node of nodes) {
         if (node.name === "*") { node.name = "×" }
