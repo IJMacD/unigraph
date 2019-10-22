@@ -6,32 +6,44 @@ import { NODE_TYPES } from './parser';
 
 /**
  * @param {Node} node
+ * @returns {Node}
  */
 export function rebalance (node) {
     if (node.type !== NODE_TYPES.OPERATOR) {
         return node;
     }
 
-    // Balance sub-trees first
-    node.children[0] = rebalance(node.children[0]);
-    node.children[1] = rebalance(node.children[1]);
+    // console.group("Start rebalance");
 
     let leftChild = node.children[0];
     let rightChild = node.children[1];
 
-    if (node.name === "+" || node.name === "*") {
-        if (node.name === leftChild.name && depth(leftChild) > depth(rightChild) + 1) {
-            // console.log(`Rebalanced Right ${node.name} Depths: ${depth(leftChild)} & ${depth(rightChild)}`)
-            node = rotateRight(node);
-        } else if (node.name === rightChild.name && depth(leftChild) < depth(rightChild)) {
-            // console.log(`Rebalanced Left ${node.name} Depths: ${depth(leftChild)} & ${depth(rightChild)}`)
-            node = rotateLeft(node);
-        }
+    // console.log(`Initial Left: ${depth(leftChild)} Right: ${depth(rightChild)}`);
+
+    if (depth(leftChild) === depth(rightChild)) {
+        // console.groupEnd();
+        return node;
     }
 
-    // Balance sub-trees again
+    while ((node.name === "+" || node.name === "*") && node.name === leftChild.name && depth(leftChild) > depth(rightChild) + 1) {
+        node = rotateRight(node);
+        leftChild = node.children[0];
+        rightChild = node.children[1];
+        // console.log(`Rebalanced Left ${node.name} Depths: ${depth(leftChild)} & ${depth(rightChild)}`);
+    }
+
+    while ((node.name === "+" || node.name === "*") && node.name === rightChild.name && depth(leftChild) < depth(rightChild)) {
+        node = rotateLeft(node);
+        leftChild = node.children[0];
+        rightChild = node.children[1];
+        // console.log(`Rebalanced Left ${node.name} Depths: ${depth(leftChild)} & ${depth(rightChild)}`);
+    }
+
+    // Balance sub-trees
     node.children[0] = rebalance(node.children[0]);
     node.children[1] = rebalance(node.children[1]);
+
+    // console.groupEnd();
 
     return node;
 }
