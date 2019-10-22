@@ -8,17 +8,20 @@ import { evaluate } from './evaluate';
 import DebugAST from './DebugAST';
 import { rebalance, constantEvaluation } from './optimise';
 
+const STORAGE_KEY = "unigraph_";
+
 function App() {
-  const [ expression, setExpression ] = React.useState("5ax³ + bx + c");
+  // const [ expression, setExpression ] = React.useState("5ax³ + bx + c");
   // const [ expression, setExpression ] = React.useState("x + x₀ + x₁");
   // const [ expression, setExpression ] = React.useState("1 + 2 + 3 + 4 + 5 + 6");
-  const [ variable, setVariable ] = React.useState("x");
-  const [ paramValues, setParamValues ] = React.useState({});
-  const [ xMin, setXMin ] = React.useState(-5);
-  const [ xMax, setXMax ] = React.useState(5);
-  const [ yMin, setYMin ] = React.useState(-10);
-  const [ yMax, setYMax ] = React.useState(50);
-  const [ instantValue, setInstantValue ] = React.useState(0);
+  const [ expression, setExpression ] = useStorage(STORAGE_KEY + "expression", "a + b + c + d");
+  const [ variable, setVariable ] = useStorage(STORAGE_KEY + "variable", "x");
+  const [ paramValues, setParamValues ] = useStorage(STORAGE_KEY + "param_values", {});
+  const [ xMin, setXMin ] = useStorage(STORAGE_KEY + "xmin", -5);
+  const [ xMax, setXMax ] = useStorage(STORAGE_KEY + "xmax", 5);
+  const [ yMin, setYMin ] = useStorage(STORAGE_KEY + "ymin", -10);
+  const [ yMax, setYMax ] = useStorage(STORAGE_KEY + "ymax", 50);
+  const [ instantValue, setInstantValue ] = useStorage(STORAGE_KEY + "instant_value", 0);
 
   let valid = true;
   let tokens;
@@ -61,7 +64,7 @@ function App() {
   return (
     <div className="App">
       <label>
-        y({variable}) = 
+        y({variable}) =
         <input placeholder="Equation" value={expression} onChange={e => setExpression(e.target.value)} style={{ borderColor: valid ? "initial" : "red" }} />
       </label>
       {/* <label>
@@ -101,3 +104,27 @@ function App() {
 }
 
 export default App;
+
+/**
+ * @param {string} key
+ * @param {T} initialValue
+ * @returns {[ T, (newValue: T) => void]}
+ * @template T
+ */
+function useStorage (key, initialValue=null) {
+  const storedJSON = localStorage.getItem(key);
+  let stored = initialValue;
+
+  if (storedJSON) {
+    try {
+      stored = JSON.parse(storedJSON);
+    } catch (e) {}
+  }
+
+  const [ value, setValue ] = React.useState(stored);
+
+  return [
+    value,
+    newValue => { localStorage.setItem(key, JSON.stringify(newValue)); setValue(newValue); }
+  ];
+}

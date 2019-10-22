@@ -22,14 +22,13 @@ export const NODE_TYPES = {
 export function parse (tokens) {
     /** @type {Node[]} */
     const nodes = [];
-    let i = 0;
 
     for (const token of tokens) {
         const prev = nodes.length > 0 ? nodes[nodes.length - 1] : null;
-        
+
         switch (token.type) {
             case TOKEN_TYPES.NAME: {
-                if (prev && 
+                if (prev &&
                     (prev.type === NODE_TYPES.SYMBOL || prev.type === NODE_TYPES.CONSTANT))
                 {
                     nodes.push({ type: NODE_TYPES.OPERATOR, name: "*", children: [] });
@@ -58,12 +57,12 @@ export function parse (tokens) {
                 if (prev.type !== NODE_TYPES.SYMBOL) {
                     throw TypeError("Subscript must appear after a symbol");
                 }
-                
+
                 prev.name += token.value.toString();
             }
             break;
             default:
-                throw TypeError("Unecpected node type");
+                throw TypeError("Unexpected node type");
         }
     }
 
@@ -76,7 +75,7 @@ export function parse (tokens) {
     // console.log(nodes);
 
     let index = 0;
-    
+
     function descend () {
         const n = nodes[index++];
 
